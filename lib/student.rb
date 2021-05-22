@@ -1,3 +1,5 @@
+require 'pry'
+
 class Student
   attr_accessor :id, :name, :grade
 
@@ -40,4 +42,65 @@ class Student
     sql = "DROP TABLE IF EXISTS students"
     DB[:conn].execute(sql)
   end
+
+  def self.new_from_db(row)
+    student = self.new
+    student.id = row[0]
+    student.name = row[1]
+    student.grade = row[2].to_i
+    student
+  end
+
+  def self.find_by_name(name)
+    sql = <<-SQL
+      SELECT * FROM students WHERE name = ? LIMIT 1
+      SQL
+      DB[:conn].execute(sql, name).map do |row|
+        self.new_from_db(row)
+      end.first
+  end
+
+  def self.all
+    results_array = DB[:conn].execute("SELECT * FROM students;")
+    all_students = results_array.map do |row|
+      self.new_from_db(row)
+    end
+    all_students
+  end
+
+  def self.all_students_in_grade_9
+    ninth_graders = self.all.select do |student|
+      student.grade == 9
+    end
+    ninth_graders
+  end
+
+  def self.students_below_12th_grade
+    underclassmen = self.all.select do |student|
+      student.grade != 12
+    end
+    underclassmen
+  end
+
+  def self.first_X_students_in_grade_10(number)
+    tenth_graders = self.all.select do |student|
+      student.grade == 10
+    end
+    tenth_graders.slice(0, number)
+  end
+
+  def self.first_student_in_grade_10
+    first_tenth_grader = self.all.find do |student|
+      student.grade == 10
+    end
+    first_tenth_grader
+  end
+
+  def self.all_students_in_grade_X(grade)
+    all_graders = self.all.select do |student|
+      student.grade == grade
+    end
+    all_graders
+  end
+
 end
